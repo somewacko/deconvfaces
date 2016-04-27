@@ -60,7 +60,7 @@ def process_image(image, trim=32, size=(192, 128), top=0):
 
     def is_bg(x):
         """ Returns true if the color is light-gray-like. """
-        return 176 < x.mean() and x.std() < 10
+        return 156 < x.mean() and x.std() < 10
 
     def color_from_mask(image, mask):
         """ Gets the average color of an image from a given mask. """
