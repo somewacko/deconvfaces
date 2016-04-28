@@ -111,8 +111,6 @@ class GenerateIntermediate(Callback):
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
-        print("Generating images to {}".format(dest_dir))
-
         gen = self.model.predict(self.parameters)
 
         for i in range(0, gen.shape[0]):
