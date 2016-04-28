@@ -107,7 +107,7 @@ class GenerateIntermediate(Callback):
     def on_epoch_end(self, epoch, logs={}):
         """ Generate and save results to """
 
-        dest_dir = os.path.join(self.output_dir, 'gen', 'e{:03}'.format(epoch))
+        dest_dir = os.path.join(self.output_dir, 'gen', 'e{:04}'.format(epoch))
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
@@ -118,8 +118,12 @@ class GenerateIntermediate(Callback):
             for x in range(0, 3):
                 image[:,:,x] = gen[i,x,:,:]
             image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
-            file_path = os.path.join(dest_dir, '{:03}.jpg'.format(i))
+            file_path = os.path.join(dest_dir, '{:04}.jpg'.format(i))
             misc.imsave(file_path, image)
+
+        if epoch % 5 == 0:
+            self.model.save_weights(os.path.join(self.output_dir,
+                'w{:04}.h5'.format(epoch)))
 
 
 # ---- Commands
@@ -153,6 +157,11 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
             output_shape    = info['image_shape'],
     )
 
+    yaml_str = model.to_yaml()
+    f = open(os.path.join(output_dir, 'model.yaml'), 'w')
+    f.write(yaml_str)
+    f.close()
+
     # Load data into input tensors
 
     id_feat = np.empty((len(instances), info['identity_len']))
@@ -178,16 +187,16 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
 
     # Create parameters to generate
 
-    id_gen = np.zeros((54, info['identity_len']))
-    gd_gen = np.zeros((54, info['gender_len']))
-    or_gen = np.zeros((54, info['orientation_len']))
-    em_gen = np.zeros((54, info['emotion_len']))
+    id_gen = np.zeros((370, info['identity_len']))
+    gd_gen = np.zeros((370, info['gender_len']))
+    or_gen = np.zeros((370, info['orientation_len']))
+    em_gen = np.zeros((370, info['emotion_len']))
 
     # TODO: More dynamic way to do this
     x = 0
-    for identity in range(0, 10+1, 5): # 3
+    for identity in range(0, 20+1, 5): # 5
         for gender in range(0, 2): # 2
-            for angle in [-90, -67.5, -45, -22.5, 0, 22.5, 45, 67.5, 90]: # 9
+            for angle in range(-90, 90+1, 5): # 37
                 angle = np.deg2rad(angle)
 
                 id_gen[x,identity] = 1.
@@ -214,11 +223,6 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
             callbacks=[gen_intermediate])
 
     print("Saving model and weights...")
-
-    yaml_str = model.to_yaml()
-    f = open(os.path.join(output_dir, 'model.yaml'), 'w')
-    f.write(yaml_str)
-    f.close()
 
     model.save_weights(os.path.join(output_dir, 'weights.h5'), overwrite=True)
 
