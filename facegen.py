@@ -343,7 +343,7 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
 
     # Begin training
 
-    model.fit(model_inputs, images, nb_epoch=num_epochs, batch_size=128,
+    model.fit(model_inputs, images, nb_epoch=num_epochs, batch_size=batch_size,
             callbacks=[gen_intermediate])
 
     print("Saving model and weights...")
