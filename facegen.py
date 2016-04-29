@@ -152,6 +152,57 @@ def generate_images(model, output_dir):
         file_path = os.path.join(id_dir, filenames[i])
         misc.imsave(file_path, image)
 
+    # Sweep emotions
+
+    if not os.path.exists(em_dir):
+        os.makedirs(em_dir)
+
+    num_sweep = 10 # The number of examples to sweep through
+    num_samples = (num_sweep+1) * id_len * int(em_len*em_len/2.0-em_len/2.0)
+
+    id_feat = np.zeros((num_samples, id_len))
+    gd_feat = np.zeros((num_samples, gd_len))
+    or_feat = np.zeros((num_samples, or_len))
+    em_feat = np.zeros((num_samples, em_len))
+
+    filenames = list()
+
+    x = 0
+    for i in range(0, id_len):
+        for e1 in range(0, em_len):
+            for e2 in range(e1+1, em_len):
+                for n in range(0, num_sweep+1):
+                    n = n/float(num_sweep)
+                    id_feat[x,i] = 1.0
+                    em_feat[x,e1] = 1.0-n
+                    em_feat[x,e2] = n
+
+                    filenames.append('id{:02}-{:02}-{:02}-{:.2}.jpg'
+                            .format(i,e1,e2,n))
+
+                    # Fix orientation and emotion (leave gender at 0,0)
+                    or_feat[x,1] = 1.0
+
+                    x += 1
+
+    gen = model.predict({
+        'identity'    : id_feat,
+        'gender'      : gd_feat,
+        'orientation' : or_feat,
+        'emotion'     : em_feat
+        }, verbose=1)
+
+    # Save images
+
+    for i in range(0, gen.shape[0]):
+        image = np.empty(gen.shape[2:]+(3,))
+        for x in range(0, 3):
+            image[:,:,x] = gen[i,x,:,:]
+        image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
+        file_path = os.path.join(em_dir, filenames[i])
+        misc.imsave(file_path, image)
+
+
 
 class GenerateIntermediate(Callback):
     """ Callback to generate intermediate images after each epoch. """
