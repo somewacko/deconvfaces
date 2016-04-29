@@ -14,7 +14,7 @@ import sys
 from keras.callbacks import Callback
 from keras.layers import Convolution2D, Dense, LeakyReLU, Input, MaxPooling2D, \
         merge, Reshape, UpSampling2D, ZeroPadding2D
-from keras.models import Model
+from keras.models import Model, model_from_yaml
 from keras.utils.layer_utils import print_summary
 
 import numpy as np
@@ -82,6 +82,75 @@ def build_model(identity_len=57, gender_len=2, orientation_len=2,
     model.compile(optimizer='adam', loss='mse')
 
     return model
+
+
+def generate_images(model, output_dir):
+    """
+    Sweeps through different parameters and generates images.
+
+    Args:
+        model (keras.models.Model): Model to generate from.
+        output_dir (str): Directory to save generated images in.
+    """
+
+    id_len = model.input_shape[0][1]
+    gd_len = model.input_shape[1][1]
+    or_len = model.input_shape[2][1]
+    em_len = model.input_shape[3][1]
+
+    id_dir = os.path.join(output_dir, 'id')
+    gd_dir = os.path.join(output_dir, 'gd')
+    or_dir = os.path.join(output_dir, 'or')
+    em_dir = os.path.join(output_dir, 'em')
+    rd_dir = os.path.join(output_dir, 'rd') # Random vecs
+
+    # Sweep identities
+
+    if not os.path.exists(id_dir):
+        os.makedirs(id_dir)
+
+    num_sweep = 10 # The number of examples to sweep through
+    num_samples = (num_sweep+1) * int(id_len*id_len/2.0-id_len/2.0)
+
+    id_feat = np.zeros((num_samples, id_len))
+    gd_feat = np.zeros((num_samples, gd_len))
+    or_feat = np.zeros((num_samples, or_len))
+    em_feat = np.zeros((num_samples, em_len))
+
+    filenames = list()
+
+    x = 0
+    for i in range(0, id_len):
+        for j in range(i+1, id_len):
+            for n in range(0, num_sweep+1):
+                n = n/float(num_sweep)
+                id_feat[x,i] = 1.0-n
+                id_feat[x,j] = n
+
+                filenames.append('{:02}-{:02}-{:.2}.jpg'.format(i,j,n))
+
+                # Fix orientation and emotion (leave gender at 0,0)
+                or_feat[x,1] = 1.0
+                em_feat[x,:] = Emotion.neutral
+
+                x += 1
+
+    gen = model.predict({
+        'identity'    : id_feat,
+        'gender'      : gd_feat,
+        'orientation' : or_feat,
+        'emotion'     : em_feat
+        }, verbose=1)
+
+    # Save images
+
+    for i in range(0, gen.shape[0]):
+        image = np.empty(gen.shape[2:]+(3,))
+        for x in range(0, 3):
+            image[:,:,x] = gen[i,x,:,:]
+        image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
+        file_path = os.path.join(id_dir, filenames[i])
+        misc.imsave(file_path, image)
 
 
 class GenerateIntermediate(Callback):
@@ -226,9 +295,29 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
 
     model.save_weights(os.path.join(output_dir, 'weights.h5'), overwrite=True)
 
- 
-def generate():
-    pass
+
+def generate(model_path, weights_path, output_dir):
+    """
+    Generates face images from a given model with trained weights.
+
+    Args:
+        model_path (str): Path to the model file.
+        weights_path (str): Path to the weights file.
+        output_dir (str): Directory to output files in.
+    """
+
+    print("Loading model...")
+
+    mfile = open(model_path, 'r')
+    yaml_str = mfile.read()
+    model = model_from_yaml(yaml_str)
+    model.compile(optimizer='sgd', loss='mse')
+
+    model.load_weights(weights_path)
+
+    print("Generating images...")
+
+    generate_images(model, output_dir)
 
 
 # ---- Command-line invocation
@@ -265,6 +354,6 @@ if __name__ == '__main__':
         train(args.data, args.output, batch_size=args.batch_size,
                 num_epochs=args.num_epochs)
     elif args.command == 'generate':
-        generate()
+        generate(args.model, args.weights, args.output)
 
 
