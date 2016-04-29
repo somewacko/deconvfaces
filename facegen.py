@@ -51,8 +51,8 @@ def build_model(identity_len=57, gender_len=2, orientation_len=2,
 
     # Get dimensions of initial volume
 
-    height = int(output_shape[0]/16)
-    width  = int(output_shape[1]/16)
+    height = int(output_shape[0]/32)
+    width  = int(output_shape[1]/32)
 
     # Create RGB stream
 
@@ -62,6 +62,10 @@ def build_model(identity_len=57, gender_len=2, orientation_len=2,
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
     x = LeakyReLU()( Convolution2D(256, 5, 5, border_mode='same')(x) )
+
+    x = MaxPooling2D((1,1))(x)
+    x = UpSampling2D((2,2))(x)
+    x = LeakyReLU()( Convolution2D(128, 5, 5, border_mode='same')(x) )
 
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
