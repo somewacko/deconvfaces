@@ -88,7 +88,7 @@ def build_model(identity_len=57, gender_len=2, orientation_len=2,
     return model
 
 
-def generate_images(model, output_dir):
+def generate_images(model, output_dir, batch_size=32):
     """
     Sweeps through different parameters and generates images.
 
@@ -144,7 +144,7 @@ def generate_images(model, output_dir):
         'gender'      : gd_feat,
         'orientation' : or_feat,
         'emotion'     : em_feat
-        }, verbose=1)
+        }, batch_size=batch_size, verbose=1)
 
     # Save images
 
@@ -194,7 +194,7 @@ def generate_images(model, output_dir):
         'gender'      : gd_feat,
         'orientation' : or_feat,
         'emotion'     : em_feat
-        }, verbose=1)
+        }, batch_size=batch_size, verbose=1)
 
     # Save images
 
@@ -211,7 +211,7 @@ def generate_images(model, output_dir):
 class GenerateIntermediate(Callback):
     """ Callback to generate intermediate images after each epoch. """
 
-    def __init__(self, output_dir, parameters):
+    def __init__(self, output_dir, parameters, batch_size=32):
         """
         Constructor for a GenerateIntermediate object.
 
@@ -223,6 +223,7 @@ class GenerateIntermediate(Callback):
 
         self.output_dir = output_dir
         self.parameters = parameters
+        self.batch_size = batch_size
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -235,7 +236,7 @@ class GenerateIntermediate(Callback):
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
-        gen = self.model.predict(self.parameters)
+        gen = self.model.predict(self.parameters, batch_size=batch_size)
 
         for i in range(0, gen.shape[0]):
             image = np.empty(gen.shape[2:]+(3,))
@@ -311,16 +312,16 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
 
     # Create parameters to generate
 
-    id_gen = np.zeros((370, info['identity_len']))
-    gd_gen = np.zeros((370, info['gender_len']))
-    or_gen = np.zeros((370, info['orientation_len']))
-    em_gen = np.zeros((370, info['emotion_len']))
+    id_gen = np.zeros((90, info['identity_len']))
+    gd_gen = np.zeros((90, info['gender_len']))
+    or_gen = np.zeros((90, info['orientation_len']))
+    em_gen = np.zeros((90, info['emotion_len']))
 
     # TODO: More dynamic way to do this
     x = 0
     for identity in range(0, 20+1, 5): # 5
         for gender in range(0, 2): # 2
-            for angle in range(-90, 90+1, 5): # 37
+            for angle in [-90., -67.5, -45., -22.5, 0., 22.5, 45., 67.5, 90]:
                 angle = np.deg2rad(angle)
 
                 id_gen[x,identity] = 1.
