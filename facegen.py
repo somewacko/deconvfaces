@@ -24,7 +24,7 @@ from instance import Emotion, Instance, load_data
 
 
 
-def build_model(identity_len=57, gender_len=2, orientation_len=2,
+def build_model(identity_len=57, orientation_len=2,
         emotion_len=8, output_shape=(160,128)):
     """
     Builds the deconvolution model.
@@ -33,18 +33,16 @@ def build_model(identity_len=57, gender_len=2, orientation_len=2,
     print("Building model...")
 
     identity_input    = Input(shape=(identity_len,),    name='identity')
-    gender_input      = Input(shape=(gender_len,),      name='gender')
     orientation_input = Input(shape=(orientation_len,), name='orientation')
     emotion_input     = Input(shape=(emotion_len,),     name='emotion')
 
     # Hidden representation for input parameters
 
     id_fc = LeakyReLU()( Dense(512)(identity_input) )
-    gd_fc = LeakyReLU()( Dense(512)(gender_input) )
     or_fc = LeakyReLU()( Dense(512)(orientation_input) )
     em_fc = LeakyReLU()( Dense(512)(emotion_input) )
 
-    merged = merge([id_fc, gd_fc, or_fc, em_fc], mode='concat')
+    merged = merge([id_fc, or_fc, em_fc], mode='concat')
 
     params = LeakyReLU()( Dense(1024)(merged) )
     params = LeakyReLU()( Dense(1024)(params) )
@@ -81,7 +79,7 @@ def build_model(identity_len=57, gender_len=2, orientation_len=2,
 
     # TODO: Also create segmentation stream
 
-    model = Model(input=[identity_input, gender_input, orientation_input,
+    model = Model(input=[identity_input, orientation_input,
             emotion_input], output=x)
     model.compile(optimizer='adam', loss='mse')
 
@@ -98,12 +96,10 @@ def generate_images(model, output_dir, batch_size=32):
     """
 
     id_len = model.input_shape[0][1]
-    gd_len = model.input_shape[1][1]
     or_len = model.input_shape[2][1]
     em_len = model.input_shape[3][1]
 
     id_dir = os.path.join(output_dir, 'id')
-    gd_dir = os.path.join(output_dir, 'gd')
     or_dir = os.path.join(output_dir, 'or')
     em_dir = os.path.join(output_dir, 'em')
     rd_dir = os.path.join(output_dir, 'rd') # Random vecs
@@ -117,7 +113,6 @@ def generate_images(model, output_dir, batch_size=32):
     num_samples = (num_sweep+1) * int(id_len*id_len/2.0-id_len/2.0)
 
     id_feat = np.zeros((num_samples, id_len))
-    gd_feat = np.zeros((num_samples, gd_len))
     or_feat = np.zeros((num_samples, or_len))
     em_feat = np.zeros((num_samples, em_len))
 
@@ -133,7 +128,7 @@ def generate_images(model, output_dir, batch_size=32):
 
                 filenames.append('{:02}-{:02}-{:.2}.jpg'.format(i,j,n))
 
-                # Fix orientation and emotion (leave gender at 0,0)
+                # Fix orientation and emotion
                 or_feat[x,1] = 1.0
                 em_feat[x,:] = Emotion.neutral
 
@@ -141,7 +136,6 @@ def generate_images(model, output_dir, batch_size=32):
 
     gen = model.predict({
         'identity'    : id_feat,
-        'gender'      : gd_feat,
         'orientation' : or_feat,
         'emotion'     : em_feat
         }, batch_size=batch_size, verbose=1)
@@ -165,7 +159,6 @@ def generate_images(model, output_dir, batch_size=32):
     num_samples = (num_sweep+1) * id_len * int(em_len*em_len/2.0-em_len/2.0)
 
     id_feat = np.zeros((num_samples, id_len))
-    gd_feat = np.zeros((num_samples, gd_len))
     or_feat = np.zeros((num_samples, or_len))
     em_feat = np.zeros((num_samples, em_len))
 
@@ -184,14 +177,13 @@ def generate_images(model, output_dir, batch_size=32):
                     filenames.append('id{:02}-{:02}-{:02}-{:.2}.jpg'
                             .format(i,e1,e2,n))
 
-                    # Fix orientation and emotion (leave gender at 0,0)
+                    # Fix orientation and emotion
                     or_feat[x,1] = 1.0
 
                     x += 1
 
     gen = model.predict({
         'identity'    : id_feat,
-        'gender'      : gd_feat,
         'orientation' : or_feat,
         'emotion'     : em_feat
         }, batch_size=batch_size, verbose=1)
@@ -205,7 +197,6 @@ def generate_images(model, output_dir, batch_size=32):
         image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
         file_path = os.path.join(em_dir, filenames[i])
         misc.imsave(file_path, image)
-
 
 
 class GenerateIntermediate(Callback):
@@ -253,7 +244,7 @@ class GenerateIntermediate(Callback):
 
 # ---- Commands
 
-def train(data_dir, output_dir, batch_size=128, num_epochs=100):
+def train(data_dir, output_dir, batch_size=32, num_epochs=100):
     """
     Trains the model on the data, generating intermediate results every epoch.
 
@@ -276,7 +267,6 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
 
     model = build_model(
             identity_len    = info['identity_len'],
-            gender_len      = info['gender_len'],
             orientation_len = info['orientation_len'],
             emotion_len     = info['emotion_len'],
             output_shape    = info['image_shape'],
@@ -290,7 +280,6 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
     # Load data into input tensors
 
     id_feat = np.empty((len(instances), info['identity_len']))
-    gd_feat = np.empty((len(instances), info['gender_len']))
     or_feat = np.empty((len(instances), info['orientation_len']))
     em_feat = np.empty((len(instances), info['emotion_len']))
 
@@ -298,44 +287,38 @@ def train(data_dir, output_dir, batch_size=128, num_epochs=100):
 
     for idx, instance in enumerate(instances):
         id_feat[idx,:] = instance.identity_vec
-        gd_feat[idx,:] = instance.gender
         or_feat[idx,:] = instance.orientation
         em_feat[idx,:] = instance.emotion
         images[idx,:,:,:] = instance.th_image()
 
     model_inputs = {
         'identity'    : id_feat,
-        'gender'      : gd_feat,
         'orientation' : or_feat,
         'emotion'     : em_feat,
     }
 
     # Create parameters to generate
 
-    id_gen = np.zeros((90, info['identity_len']))
-    gd_gen = np.zeros((90, info['gender_len']))
-    or_gen = np.zeros((90, info['orientation_len']))
-    em_gen = np.zeros((90, info['emotion_len']))
+    id_gen = np.zeros((45, info['identity_len']))
+    or_gen = np.zeros((45, info['orientation_len']))
+    em_gen = np.zeros((45, info['emotion_len']))
 
     # TODO: More dynamic way to do this
     x = 0
     for identity in range(0, 20+1, 5): # 5
-        for gender in range(0, 2): # 2
-            for angle in [-90., -67.5, -45., -22.5, 0., 22.5, 45., 67.5, 90]:
-                angle = np.deg2rad(angle)
+        for angle in [-90., -67.5, -45., -22.5, 0., 22.5, 45., 67.5, 90]:
+            angle = np.deg2rad(angle)
 
-                id_gen[x,identity] = 1.
-                gd_gen[x,gender] = 1.
-                or_gen[x,:] = np.array([np.sin(angle), np.cos(angle)])
-                em_gen[x,:] = Emotion.neutral
+            id_gen[x,identity] = 1.
+            or_gen[x,:] = np.array([np.sin(angle), np.cos(angle)])
+            em_gen[x,:] = Emotion.neutral
 
-                x += 1
+            x += 1
 
     # Give to callback
 
     gen_inputs = {
         'identity'    : id_gen,
-        'gender'      : gd_gen,
         'orientation' : or_gen,
         'emotion'     : em_gen,
     }
@@ -394,7 +377,7 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--weights', type=str, default='', help=
             "Weights file to load/save.")
 
-    parser.add_argument('-b', '--batch-size', type=int, default=128, help=
+    parser.add_argument('-b', '--batch-size', type=int, default=32, help=
             "Size of the batch to use.")
     parser.add_argument('-e', '--num-epochs', type=int, default=100, help=
             "The number of epochs to train on.")

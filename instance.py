@@ -12,10 +12,6 @@ from tqdm import tqdm
 
 # ---- Enum classes for vector descriptions
 
-class Gender:
-    female = [1., 0.]
-    male   = [0., 1.]
-
 class Emotion:
     angry         = [1., 0., 0., 0., 0., 0., 0., 0.]
     contemptuous  = [0., 1., 0., 0., 0., 0., 0., 0.]
@@ -101,7 +97,6 @@ class Instance:
 
         self.identity = int(items[1])-1 # Identities are 1-indexed
 
-        self.gender = np.array(getattr(Gender, items[3]))
         self.emotion = np.array(getattr(Emotion, items[4]))
 
 
@@ -127,7 +122,6 @@ class Instance:
 
         info = dict()
         info['identity_len']    = len(self.identity_vec)
-        info['gender_len']      = len(self.gender)
         info['orientation_len'] = len(self.orientation)
         info['emotion_len']     = len(self.emotion)
         info['image_shape']     = tuple(self.image.shape[0:2])
