@@ -330,8 +330,8 @@ def train(data_dir, output_dir, batch_size=32, num_epochs=100):
 
     gen_intermediate = GenerateIntermediate(output_dir, gen_inputs)
     model_checkpoint = ModelCheckpoint(
-            os.path.join(output_dir, 'weights.e{epoch:02d}.{loss=.2f}.h5'),
-            'loss', verbose=1, save_best_only=True)
+            os.path.join(output_dir, 'weights.h5'),
+            monitor='loss', verbose=1, save_best_only=True)
 
     # Begin training
 
