@@ -11,9 +11,9 @@ import argparse
 import os
 import sys
 
-from keras.callbacks import Callback
-from keras.layers import Convolution2D, Dense, LeakyReLU, Input, MaxPooling2D, \
-        merge, Reshape, UpSampling2D, ZeroPadding2D
+from keras.callbacks import Callback, ModelCheckpoint
+from keras.layers import Convolution2D, Dense, Lambda, LeakyReLU, Input, \
+        MaxPooling2D, merge, Reshape, UpSampling2D, ZeroPadding2D
 from keras.models import Model, model_from_yaml
 from keras.utils.layer_utils import print_summary
 
@@ -60,24 +60,27 @@ def build_model(identity_len=57, orientation_len=2,
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
     x = LeakyReLU()( Convolution2D(256, 5, 5, border_mode='same')(x) )
+    x = LeakyReLU()( Convolution2D(256, 3, 3, border_mode='same')(x) )
 
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
     x = LeakyReLU()( Convolution2D(128, 5, 5, border_mode='same')(x) )
+    x = LeakyReLU()( Convolution2D(128, 3, 3, border_mode='same')(x) )
 
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
     x = LeakyReLU()( Convolution2D(92, 5, 5, border_mode='same')(x) )
+    x = LeakyReLU()( Convolution2D(92, 3, 3, border_mode='same')(x) )
 
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
     x = LeakyReLU()( Convolution2D(92, 5, 5, border_mode='same')(x) )
+    x = LeakyReLU()( Convolution2D(92, 3, 3, border_mode='same')(x) )
 
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
-    x = Convolution2D(3, 5, 5, border_mode='same', activation='sigmoid')(x)
-
-    # TODO: Also create segmentation stream
+    x = LeakyReLU()( Convolution2D(3, 5, 5, border_mode='same')(x) )
+    x = Convolution2D(3, 3, 3, border_mode='same', activation='sigmoid')(x)
 
     model = Model(input=[identity_input, orientation_input,
             emotion_input], output=x)
@@ -227,7 +230,7 @@ class GenerateIntermediate(Callback):
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
-        gen = self.model.predict(self.parameters, batch_size=batch_size)
+        gen = self.model.predict(self.parameters, batch_size=self.batch_size)
 
         for i in range(0, gen.shape[0]):
             image = np.empty(gen.shape[2:]+(3,))
@@ -237,9 +240,11 @@ class GenerateIntermediate(Callback):
             file_path = os.path.join(dest_dir, '{:04}.jpg'.format(i))
             misc.imsave(file_path, image)
 
+        """
         if epoch % 5 == 0:
             self.model.save_weights(os.path.join(self.output_dir,
                 'w{:04}.h5'.format(epoch)))
+        """
 
 
 # ---- Commands
@@ -324,15 +329,14 @@ def train(data_dir, output_dir, batch_size=32, num_epochs=100):
     }
 
     gen_intermediate = GenerateIntermediate(output_dir, gen_inputs)
+    model_checkpoint = ModelCheckpoint(
+            os.path.join(output_dir, 'weights.e{epoch:02d}.{loss=.2f}.h5'),
+            'loss', verbose=1, save_best_only=True)
 
     # Begin training
 
     model.fit(model_inputs, images, nb_epoch=num_epochs, batch_size=batch_size,
-            callbacks=[gen_intermediate])
-
-    print("Saving model and weights...")
-
-    model.save_weights(os.path.join(output_dir, 'weights.h5'), overwrite=True)
+            callbacks=[gen_intermediate, model_checkpoint])
 
 
 def generate(model_path, weights_path, output_dir):
