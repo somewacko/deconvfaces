@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fg.py
+fg
 
 CLI for training and interfacing with FaceGen models.
 
@@ -13,34 +13,44 @@ import types
 
 # ---- Available commands
 
-def train(args):
+def train():
     """
     Command to train a FaceGen model.
     """
 
     parser = argparse.ArgumentParser(
             description = "Trains a FaceGen model using the Radboud Face Database",
-            usage       = "fg <data> <output> [<args>]",
+            usage       = "fg <data> [<args>]",
     )
     parser.add_argument('data', type=str, help=
             "Directory where RaFD data lives.")
-    parser.add_argument('output', type=str, help=
+    parser.add_argument('-o', '--output', type=str, default='output', help=
             "Directory to output results to.")
 
     parser.add_argument('-b', '--batch-size', type=int, default=32, help=
             "Batch size to use while training.")
     parser.add_argument('-e', '--num-epochs', type=int, default=100, help=
             "The number of epochs to train.")
+    parser.add_argument('-d', '--deconv-layers', type=int, default=5, help=
+            "The number of deconvolution layers to include in the model.")
 
     parser.add_argument('-v', '--visualize', action='store_true', help=
             "Output intermediate results after each epoch.")
 
     args = parser.parse_args(sys.argv[2:])
 
-    raise RuntimeError("Command 'train' is not implemented yet!")
+    import facegen.train
+
+    facegen.train.train_model(args.data, args.output,
+        batch_size            = args.batch_size,
+        num_epochs            = args.num_epochs,
+        deconv_layers         = args.deconv_layers,
+        generate_intermediate = args.visualize,
+        verbose               = True,
+    )
 
 
-def generate(args):
+def generate():
     """
     Command to generate faces with a FaceGen model.
     """
@@ -53,8 +63,6 @@ def generate(args):
             "Directory to output results to.")
     parser.add_argument('-m', '--model', type=str, required=True, help=
             "Model definition file to use.")
-    parser.add_argument('-w', '--weights', type=str, required=True, help=
-            "Weights file to load.")
 
     # TODO: How to specify what to generate?
     #
