@@ -116,10 +116,10 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
     callbacks = list()
 
     if generate_intermediate:
-        intermediate_dir = os.path.join(output_dir, 'intermediate.{}.d{}'.format(optimizer, deconv_layers))
+        intermediate_dir = os.path.join(output_dir, 'intermediate.d{}.{}'.format(deconv_layers, optimizer))
         callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities) )
 
-    model_name = 'FaceGen.model.d{:02}.{{epoch:03d}}.h5'.format(deconv_layers)
+    model_name = 'FaceGen.model.d{:02}.{}.{{epoch:03d}}.h5'.format(deconv_layers, optimizer)
 
     callbacks.append(
         ModelCheckpoint(
