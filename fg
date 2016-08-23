@@ -27,7 +27,7 @@ def train():
     parser.add_argument('-o', '--output', type=str, default='output', help=
             "Directory to output results to.")
 
-    parser.add_argument('-b', '--batch-size', type=int, default=32, help=
+    parser.add_argument('-b', '--batch-size', type=int, default=16, help=
             "Batch size to use while training.")
     parser.add_argument('-e', '--num-epochs', type=int, default=100, help=
             "The number of epochs to train.")
