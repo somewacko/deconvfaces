@@ -31,6 +31,8 @@ def train():
             "Batch size to use while training.")
     parser.add_argument('-e', '--num-epochs', type=int, default=100, help=
             "The number of epochs to train.")
+    parser.add_argument('-opt', '--optimizer', type=str, default='adam', help=
+            "Optimizer to use, must be a valid optimizer included in Keras.")
     parser.add_argument('-d', '--deconv-layers', type=int, default=5, help=
             "The number of deconvolution layers to include in the model.")
 
@@ -41,9 +43,14 @@ def train():
 
     import facegen.train
 
+    if args.deconv_layers > 6:
+        print("Warning: Having more than 6 deconv layers will create images "
+              "larger than the original data! (and may not fit in memory)")
+
     facegen.train.train_model(args.data, args.output,
         batch_size            = args.batch_size,
         num_epochs            = args.num_epochs,
+        optimizer             = args.optimizer,
         deconv_layers         = args.deconv_layers,
         generate_intermediate = args.visualize,
         verbose               = True,

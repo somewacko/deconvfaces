@@ -14,7 +14,7 @@ from .instance import Emotion
 
 def build_model(identity_len=57, orientation_len=2,
         emotion_len=Emotion.length(), initial_shape=(5,4), deconv_layers=5,
-        num_kernels=[256, 128, 96, 96, 64, 32, 16]):
+        num_kernels=[256, 256, 128, 128, 96, 96, 64], optimizer='adam'):
     """
     Builds a deconvolution FaceGen model.
 
@@ -26,6 +26,7 @@ def build_model(identity_len=57, orientation_len=2,
         deconv_layers (int): How many deconv. layers to use. More layers
             gives better resolution, although requires more GPU memory.
         num_kernels (list<int>): Number of convolution kernels for each layer.
+        optimizer (str): The optimizer to use. Will only use default values.
     Returns:
         keras.Model, the constructed model.
     """
@@ -78,7 +79,7 @@ def build_model(identity_len=57, orientation_len=2,
     model = Model(input=[identity_input, orientation_input,
             emotion_input], output=x)
     # TODO: Optimizer options
-    model.compile(optimizer='adam', loss='mse')
+    model.compile(optimizer=optimizer, loss='mse')
 
     return model
 

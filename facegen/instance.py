@@ -88,7 +88,7 @@ class RaFDInstances:
             all_instances = tqdm(all_instances)
 
         for i in all_instances:
-            instance = Instance(self.directory, self.filenames[i], image_size)
+            instance = RaFDInstance(self.directory, self.filenames[i], image_size)
 
             inputs['emotion'][i,:] = instance.emotion
             inputs['identity'][i,:] = instance.identity_vector(self.identity_map)
@@ -101,7 +101,7 @@ class RaFDInstances:
 
 # ---- Instance class definition
 
-class Instance:
+class RaFDInstance:
     """
     Holds information about each example.
     """

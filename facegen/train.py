@@ -28,7 +28,7 @@ class GenerateIntermediate(Callback):
         """
         super(Callback, self).__init__()
 
-        self.output_dir = os.path.join(output_dir, 'intermediate')
+        self.output_dir = output_dir
         self.num_identities = num_identities
         self.batch_size = batch_size
 
@@ -71,7 +71,8 @@ class GenerateIntermediate(Callback):
 
 
 def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
-        deconv_layers=5, generate_intermediate=False, verbose=False):
+        optimizer='adam', deconv_layers=5, generate_intermediate=False,
+        verbose=False):
     """
     Trains the model on the data, generating intermediate results every epoch.
 
@@ -82,6 +83,7 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
     Args (optional):
         batch_size (int): Size of the batch to use.
         num_epochs (int): Number of epochs to train for.
+        optimizer (str): Keras optimizer to use.
         deconv_layers (int): The number of deconvolution layers to use.
         generate_intermediate (bool): Whether or not to generate intermediate results.
     """
@@ -99,8 +101,10 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
     # Create FaceGen model to use
 
     model = build_model(
-        identity_len = instances.num_identities,
-        deconv_layers = deconv_layers)
+        identity_len  = instances.num_identities,
+        deconv_layers = deconv_layers,
+        optimizer     = optimizer
+    )
 
     if verbose:
         print("Built model with {} deconvolution layers and output size {}"
@@ -112,7 +116,8 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
     callbacks = list()
 
     if generate_intermediate:
-        callbacks.append( GenerateIntermediate(output_dir, instances.num_identities) )
+        intermediate_dir = os.path.join(output_dir, 'intermediate.{}.d{}'.format(optimizer, deconv_layers))
+        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities) )
 
     model_name = 'FaceGen.model.d{:02}.{{epoch:03d}}.h5'.format(deconv_layers)
 
