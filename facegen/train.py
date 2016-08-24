@@ -67,7 +67,7 @@ class GenerateIntermediate(Callback):
             for x in range(0, 3):
                 image[:,:,x] = gen[i,x,:,:]
             image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
-            file_path = os.path.join(dest_dir, '{:02}.jpg'.format(i))
+            file_path = os.path.join(dest_dir, '{:02}.png'.format(i))
             scipy.misc.imsave(file_path, image)
 
 
