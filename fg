@@ -27,6 +27,8 @@ def train():
     parser.add_argument('-o', '--output', type=str, default='output', help=
             "Directory to output results to.")
 
+    parser.add_argument('-m', '--model', type=str, default='', help=
+            "The model to load. If none specified, a new model will be made instead.")
     parser.add_argument('-b', '--batch-size', type=int, default=16, help=
             "Batch size to use while training.")
     parser.add_argument('-e', '--num-epochs', type=int, default=100, help=
@@ -35,11 +37,14 @@ def train():
             "Optimizer to use, must be a valid optimizer included in Keras.")
     parser.add_argument('-d', '--deconv-layers', type=int, default=5, help=
             "The number of deconvolution layers to include in the model.")
+    parser.add_argument('-k', '--kernels-per-layer', type=int, nargs='+', help=
+            "The number of kernels to include in each layer.")
 
     parser.add_argument('-v', '--visualize', action='store_true', help=
             "Output intermediate results after each epoch.")
 
     args = parser.parse_args(sys.argv[2:])
+
 
     import facegen.train
 
@@ -47,11 +52,12 @@ def train():
         print("Warning: Having more than 6 deconv layers will create images "
               "larger than the original data! (and may not fit in memory)")
 
-    facegen.train.train_model(args.data, args.output,
+    facegen.train.train_model(args.data, args.output, args.model,
         batch_size            = args.batch_size,
         num_epochs            = args.num_epochs,
         optimizer             = args.optimizer,
         deconv_layers         = args.deconv_layers,
+        kernels_per_layer     = args.kernels_per_layer,
         generate_intermediate = args.visualize,
         verbose               = True,
     )

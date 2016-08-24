@@ -14,7 +14,7 @@ from .instance import Emotion
 
 def build_model(identity_len=57, orientation_len=2,
         emotion_len=Emotion.length(), initial_shape=(5,4), deconv_layers=5,
-        num_kernels=[256, 256, 96, 96, 64, 64, 32], optimizer='adam'):
+        num_kernels=None, optimizer='adam'):
     """
     Builds a deconvolution FaceGen model.
 
@@ -30,6 +30,9 @@ def build_model(identity_len=57, orientation_len=2,
     Returns:
         keras.Model, the constructed model.
     """
+
+    if num_kernels is None:
+        num_kernels = [256, 256, 96, 96, 32, 32, 16]
 
     # TODO: Parameter validation
 

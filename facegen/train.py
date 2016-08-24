@@ -5,6 +5,7 @@ facegen/train.py
 import os
 
 from keras.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from keras.models import load_model
 
 import numpy as np
 import scipy.misc
@@ -70,16 +71,17 @@ class GenerateIntermediate(Callback):
             scipy.misc.imsave(file_path, image)
 
 
-def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
-        optimizer='adam', deconv_layers=5, generate_intermediate=False,
-        verbose=False):
+def train_model(data_dir, output_dir, model_file='', batch_size=32,
+        num_epochs=100, optimizer='adam', deconv_layers=5,
+        kernels_per_layer=None, generate_intermediate=False, verbose=False):
     """
     Trains the model on the data, generating intermediate results every epoch.
 
     Args:
-        model (keras.Model): Model to train.
         data_dir (str): Directory where the data lives.
         output_dir (str): Directory where outputs should be saved.
+        model_file (str): Model file to load. If none specified, a new model
+            will be created.
     Args (optional):
         batch_size (int): Size of the batch to use.
         num_epochs (int): Number of epochs to train for.
@@ -100,15 +102,21 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
 
     # Create FaceGen model to use
 
-    model = build_model(
-        identity_len  = instances.num_identities,
-        deconv_layers = deconv_layers,
-        optimizer     = optimizer
-    )
-
-    if verbose:
-        print("Built model with {} deconvolution layers and output size {}"
-                .format(deconv_layers, model.output_shape[2:]))
+    if model_file:
+        model = load_model(model_file)
+        if verbose:
+            print("Loaded model from {}".format(model_file))
+    else:
+        model = build_model(
+            identity_len  = instances.num_identities,
+            deconv_layers = deconv_layers,
+            num_kernels   = kernels_per_layer,
+            optimizer     = optimizer,
+        )
+        if verbose:
+            print("Built model with:")
+            print("\tDeconv layers: {}".format(deconv_layers))
+            print("\tOutput shape: {}".format(model.output_shape[2:]))
 
 
     # Create training callbacks
@@ -119,7 +127,7 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
         intermediate_dir = os.path.join(output_dir, 'intermediate.d{}.{}'.format(deconv_layers, optimizer))
         callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities) )
 
-    model_name = 'FaceGen.model.d{:02}.{}.{{epoch:03d}}.h5'.format(deconv_layers, optimizer)
+    model_name = 'FaceGen.model.d{:02}.{}.e{{epoch:03d}}.h5'.format(deconv_layers, optimizer)
 
     callbacks.append(
         ModelCheckpoint(
@@ -128,7 +136,7 @@ def train_model(data_dir, output_dir, batch_size=32, num_epochs=100,
         )
     )
     callbacks.append(
-        EarlyStopping(monitor='loss', patience=5)
+        EarlyStopping(monitor='loss', patience=8)
     )
 
     # Load data and begin training
