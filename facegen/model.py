@@ -5,8 +5,8 @@ Methods to build FaceGen models.
 
 """
 
-from keras.layers import Convolution2D, Dense, LeakyReLU, Input, MaxPooling2D, \
-        merge, Reshape, UpSampling2D
+from keras.layers import BatchNormalization, Convolution2D, Dense, LeakyReLU, \
+        Input, MaxPooling2D, merge, Reshape, UpSampling2D
 from keras.models import Model, model_from_yaml
 
 from .instance import Emotion
@@ -57,6 +57,7 @@ def build_model(identity_len=57, orientation_len=2,
 
     x = LeakyReLU()( Dense(height*width*num_kernels[0])(params) )
     x = Reshape((num_kernels[0], height, width))(x)
+    x = BatchNormalization()(x)
 
     for i in range(0, deconv_layers):
         # Pool and upsample
@@ -70,11 +71,12 @@ def build_model(identity_len=57, orientation_len=2,
         idx = i if i < len(num_kernels) else -1
         x = LeakyReLU()( Convolution2D(num_kernels[idx], 5, 5, border_mode='same')(x) )
         x = LeakyReLU()( Convolution2D(num_kernels[idx], 3, 3, border_mode='same')(x) )
+        x = BatchNormalization()(x)
 
     # Last deconvolution layer: Create 3-channel image.
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
-    x = LeakyReLU()( Convolution2D(3, 5, 5, border_mode='same')(x) )
+    x = Convolution2D(3, 5, 5, border_mode='same', activation='sigmoid')(x)
     x = Convolution2D(3, 3, 3, border_mode='same', activation='sigmoid')(x)
 
     # Compile the model
