@@ -6,6 +6,8 @@ Instance class to hold data for each example.
 import os
 import random
 
+from keras import backend as K
+
 import numpy as np
 import scipy.misc as misc
 from tqdm import tqdm
@@ -81,7 +83,11 @@ class RaFDInstances:
             'orientation': np.empty((self.num_instances, 2)),
         }
 
-        outputs = np.empty((self.num_instances, 3)+image_size)
+        print(image_size)
+        if K.image_dim_ordering() == 'th':
+            outputs = np.empty((self.num_instances, 3)+image_size)
+        else:
+            outputs = np.empty((self.num_instances,)+image_size+(3,))
 
         all_instances = range(0, len(self.filenames))
         if verbose:
@@ -94,7 +100,10 @@ class RaFDInstances:
             inputs['identity'][i,:] = instance.identity_vector(self.identity_map)
             inputs['orientation'][i,:] = instance.orientation
 
-            outputs[i,:,:,:] = instance.th_image()
+            if K.image_dim_ordering() == 'th':
+                outputs[i,:,:,:] = instance.th_image()
+            else:
+                outputs[i,:,:,:] = instance.tf_image()
 
         return inputs, outputs
 
@@ -176,5 +185,14 @@ class RaFDInstance:
         for i in range(0, 3):
             image[i,:,:] = self.image[:,:,i]
         return image
+
+
+    def tf_image(self):
+        """
+        Returns a TensorFlow-ordered representation of the image.
+        """
+
+        # As-is
+        return self.image
 
 

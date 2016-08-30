@@ -4,6 +4,7 @@ facegen/train.py
 
 import os
 
+from keras import backend as K
 from keras.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from keras.models import load_model
 
@@ -63,9 +64,12 @@ class GenerateIntermediate(Callback):
         gen = self.model.predict(self.parameters, batch_size=self.batch_size)
 
         for i in range(0, gen.shape[0]):
-            image = np.empty(gen.shape[2:]+(3,))
-            for x in range(0, 3):
-                image[:,:,x] = gen[i,x,:,:]
+            if K.image_dim_ordering() == 'th':
+                image = np.empty(gen.shape[2:]+(3,))
+                for x in range(0, 3):
+                    image[:,:,x] = gen[i,x,:,:]
+            else:
+                image = gen[i,:,:,:]
             image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
             file_path = os.path.join(dest_dir, '{:02}.png'.format(i))
             scipy.misc.imsave(file_path, image)
@@ -116,7 +120,7 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
         if verbose:
             print("Built model with:")
             print("\tDeconv layers: {}".format(deconv_layers))
-            print("\tOutput shape: {}".format(model.output_shape[2:]))
+            print("\tOutput shape: {}".format(model.output_shape[1:]))
 
 
     # Create training callbacks
@@ -147,7 +151,12 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
     if verbose:
         print("Loading data...")
 
-    inputs, outputs = instances.load_data(model.output_shape[2:], verbose=verbose)
+    if K.image_dim_ordering() == 'th':
+        image_size = model.output_shape[2:4]
+    else:
+        image_size = model.output_shape[1:3]
+
+    inputs, outputs = instances.load_data(image_size, verbose=verbose)
 
     if verbose:
         print("Training...")

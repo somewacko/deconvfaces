@@ -5,6 +5,7 @@ Methods to build FaceGen models.
 
 """
 
+from keras import backend as K
 from keras.layers import BatchNormalization, Convolution2D, Dense, LeakyReLU, \
         Input, MaxPooling2D, merge, Reshape, UpSampling2D
 from keras.models import Model, model_from_yaml
@@ -56,7 +57,10 @@ def build_model(identity_len=57, orientation_len=2,
     height, width = initial_shape
 
     x = LeakyReLU()( Dense(height*width*num_kernels[0])(params) )
-    x = Reshape((num_kernels[0], height, width))(x)
+    if K.image_dim_ordering() == 'th':
+        x = Reshape((num_kernels[0], height, width))(x)
+    else:
+        x = Reshape((height, width, num_kernels[0]))(x)
     x = BatchNormalization()(x)
 
     for i in range(0, deconv_layers):
@@ -87,27 +91,4 @@ def build_model(identity_len=57, orientation_len=2,
     model.compile(optimizer=optimizer, loss='mse')
 
     return model
-
-
-def load_model(model_path, weights_path=''):
-    """
-    Loads a model from a given .yaml file.
-
-    Args:
-        model_path (str): Path to the model .yaml file.
-    Args (optional):
-        weights_path (str): Path to a weights file to load.
-    Returns:
-        keras.Model, the loaded model.
-    """
-
-    with open(model_path, 'r') as model_file:
-        yaml_str = model_file.read()
-        model = model_from_yaml(yaml_str)
-        # TODO: Optimizer options
-        model.compile(optimizer='adam', loss='mse')
-        if weights_path:
-            model.load_weights(weights_path)
-    return model
-
 
