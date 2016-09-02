@@ -72,22 +72,18 @@ def generate():
             description = "Generate faces using a trained FaceGen model.",
             usage       = "fg [<args>]",
     )
-    parser.add_argument('output', type=str, help=
-            "Directory to output results to.")
     parser.add_argument('-m', '--model', type=str, required=True, help=
             "Model definition file to use.")
-
-    # TODO: How to specify what to generate?
-    #
-    # Should be able to say things like:
-    #
-    #   * Which parameters to sweep
-    #   * Starting and destination parameters
-    #   * Rate of changing parameters, linear or otherwise
+    parser.add_argument('-o', '--output', type=str, required=True, help=
+            "Directory to output results to.")
+    parser.add_argument('-f', '--gen-file', type=str, required=True, help=
+            "YAML file that specifies the parameters to generate.")
 
     args = parser.parse_args(sys.argv[2:])
 
-    raise RuntimeError("Command 'generate' is not implemented yet!")
+    import facegen.generate
+
+    facegen.generate.generate_from_yaml(args.gen_file, args.model, args.output)
 
 
 # ---- Command-line invocation

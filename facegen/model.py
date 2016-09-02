@@ -8,7 +8,7 @@ Methods to build FaceGen models.
 from keras import backend as K
 from keras.layers import BatchNormalization, Convolution2D, Dense, LeakyReLU, \
         Input, MaxPooling2D, merge, Reshape, UpSampling2D
-from keras.models import Model, model_from_yaml
+from keras.models import Model
 
 from .instance import Emotion
 
@@ -47,10 +47,8 @@ def build_model(identity_len=57, orientation_len=2,
     or_fc = LeakyReLU()( Dense(512)(orientation_input) )
     em_fc = LeakyReLU()( Dense(512)(emotion_input) )
 
-    merged = merge([id_fc, or_fc, em_fc], mode='concat')
-
-    params = LeakyReLU()( Dense(1024)(merged) )
-    #params = LeakyReLU()( Dense(1024)(params) )
+    params = merge([id_fc, or_fc, em_fc], mode='concat')
+    params = LeakyReLU()( Dense(1024)(params) )
 
     # Apply deconvolution layers
 
@@ -61,7 +59,6 @@ def build_model(identity_len=57, orientation_len=2,
         x = Reshape((num_kernels[0], height, width))(x)
     else:
         x = Reshape((height, width, num_kernels[0]))(x)
-    #x = BatchNormalization()(x)
 
     for i in range(0, deconv_layers):
         # Pool and upsample
@@ -88,6 +85,7 @@ def build_model(identity_len=57, orientation_len=2,
 
     model = Model(input=[identity_input, orientation_input,
             emotion_input], output=x)
+
     # TODO: Optimizer options
     model.compile(optimizer=optimizer, loss='msle')
 
