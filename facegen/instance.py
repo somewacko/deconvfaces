@@ -83,7 +83,6 @@ class RaFDInstances:
             'orientation': np.empty((self.num_instances, 2)),
         }
 
-        print(image_size)
         if K.image_dim_ordering() == 'th':
             outputs = np.empty((self.num_instances, 3)+image_size)
         else:

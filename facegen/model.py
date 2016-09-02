@@ -33,7 +33,7 @@ def build_model(identity_len=57, orientation_len=2,
     """
 
     if num_kernels is None:
-        num_kernels = [256, 256, 96, 96, 32, 32, 16]
+        num_kernels = [128, 128, 96, 96, 32, 32, 16]
 
     # TODO: Parameter validation
 
@@ -50,7 +50,7 @@ def build_model(identity_len=57, orientation_len=2,
     merged = merge([id_fc, or_fc, em_fc], mode='concat')
 
     params = LeakyReLU()( Dense(1024)(merged) )
-    params = LeakyReLU()( Dense(1024)(params) )
+    #params = LeakyReLU()( Dense(1024)(params) )
 
     # Apply deconvolution layers
 
@@ -61,7 +61,7 @@ def build_model(identity_len=57, orientation_len=2,
         x = Reshape((num_kernels[0], height, width))(x)
     else:
         x = Reshape((height, width, num_kernels[0]))(x)
-    x = BatchNormalization()(x)
+    #x = BatchNormalization()(x)
 
     for i in range(0, deconv_layers):
         # Pool and upsample
@@ -80,7 +80,8 @@ def build_model(identity_len=57, orientation_len=2,
     # Last deconvolution layer: Create 3-channel image.
     x = MaxPooling2D((1,1))(x)
     x = UpSampling2D((2,2))(x)
-    x = Convolution2D(3, 5, 5, border_mode='same', activation='sigmoid')(x)
+    x = LeakyReLU()( Convolution2D(8, 5, 5, border_mode='same')(x) )
+    x = LeakyReLU()( Convolution2D(8, 3, 3, border_mode='same')(x) )
     x = Convolution2D(3, 3, 3, border_mode='same', activation='sigmoid')(x)
 
     # Compile the model
@@ -88,7 +89,7 @@ def build_model(identity_len=57, orientation_len=2,
     model = Model(input=[identity_input, orientation_input,
             emotion_input], output=x)
     # TODO: Optimizer options
-    model.compile(optimizer=optimizer, loss='mse')
+    model.compile(optimizer=optimizer, loss='msle')
 
     return model
 

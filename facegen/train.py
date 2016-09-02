@@ -131,10 +131,7 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
         intermediate_dir = os.path.join(output_dir, 'intermediate.d{}.{}'.format(deconv_layers, optimizer))
         callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities) )
 
-    model_dir = os.path.join(output_dir, 'models.d{}.{}'.format(deconv_layers, optimizer))
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
-    model_path = os.path.join(model_dir, 'FaceGen.model.e{{epoch:03d}}.h5'.format(deconv_layers, optimizer))
+    model_path = os.path.join(output_dir, 'FaceGen.model.d{}.{}.h5'.format(deconv_layers, optimizer))
 
     callbacks.append(
         ModelCheckpoint(
