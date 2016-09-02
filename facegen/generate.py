@@ -304,7 +304,7 @@ class GenParser:
             return np.array([np.sin(rad), np.cos(rad)]), angle
         else:
             if start is None:
-                vec = np.random.rand(2)
+                vec = 2*np.random.rand(2) - 1
             else:
                 vec = start + (2*step*np.random.rand(2)-step)
 
