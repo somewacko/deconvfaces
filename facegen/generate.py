@@ -416,7 +416,7 @@ class GenParser:
         return fn(params)
 
 
-def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32):
+def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32, extension='jpg'):
     """
     Generate images based on parameters specified in a yaml file.
     """
@@ -466,7 +466,7 @@ def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32):
             else:
                 image = gen[i,:,:,:]
             image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
-            file_path = os.path.join(output_dir, '{:05}.png'.format(count))
+            file_path = os.path.join(output_dir, '{:05}.{}'.format(count, extension))
             scipy.misc.imsave(file_path, image)
             count += 1
 
