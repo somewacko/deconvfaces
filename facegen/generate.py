@@ -11,6 +11,7 @@ import yaml
 import numpy as np
 from scipy import interpolate
 import scipy.misc
+from tqdm import tqdm
 
 from .instance import Emotion
 
@@ -444,19 +445,29 @@ def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32):
 
     print("Generating images...")
 
-    gen = model.predict(inputs, batch_size=batch_size)
+    num_images = inputs['identity'].shape[0]
+    count = 0
 
-    print("Writing to '{}'...".format(output_dir))
+    for idx in tqdm(range(0, num_images, batch_size)):
 
-    for i in range(0, gen.shape[0]):
-        if K.image_dim_ordering() == 'th':
-            image = np.empty(gen.shape[2:]+(3,))
-            for x in range(0, 3):
-                image[:,:,x] = gen[i,x,:,:]
-        else:
-            image = gen[i,:,:,:]
-        image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
-        file_path = os.path.join(output_dir, '{:05}.png'.format(i))
-        scipy.misc.imsave(file_path, image)
+        batch = {
+            'identity':    inputs['identity']   [idx:idx+batch_size,:],
+            'emotion':     inputs['emotion']    [idx:idx+batch_size,:],
+            'orientation': inputs['orientation'][idx:idx+batch_size,:],
+        }
+
+        gen = model.predict_on_batch(batch)
+
+        for i in range(0, gen.shape[0]):
+            if K.image_dim_ordering() == 'th':
+                image = np.empty(gen.shape[2:]+(3,))
+                for x in range(0, 3):
+                    image[:,:,x] = gen[i,x,:,:]
+            else:
+                image = gen[i,:,:,:]
+            image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
+            file_path = os.path.join(output_dir, '{:05}.png'.format(count))
+            scipy.misc.imsave(file_path, image)
+            count += 1
 
 

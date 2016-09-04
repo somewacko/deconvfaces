@@ -78,12 +78,15 @@ def generate():
             "Directory to output results to.")
     parser.add_argument('-f', '--gen-file', type=str, required=True, help=
             "YAML file that specifies the parameters to generate.")
+    parser.add_argument('-b', '--batch_size', type=int, default=64, help=
+            "Batch size to use while generating images.")
 
     args = parser.parse_args(sys.argv[2:])
 
     import facegen.generate
 
-    facegen.generate.generate_from_yaml(args.gen_file, args.model, args.output)
+    facegen.generate.generate_from_yaml(args.gen_file, args.model, args.output,
+            batch_size=args.batch_size)
 
 
 # ---- Command-line invocation
