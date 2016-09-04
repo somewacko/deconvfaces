@@ -265,7 +265,7 @@ class GenParser:
         step = params['id_step']
 
         if start is None:
-            vec = np.random.rand(NUM_ID)
+            vec = 2*(np.random.rand(NUM_ID)-0.5)
         else:
             vec = start + (2*step*np.random.rand(NUM_ID)-step)
 
@@ -279,7 +279,7 @@ class GenParser:
         step = params['em_step']
 
         if start is None:
-            vec = np.random.rand(Emotion.length())
+            vec = 2*(np.random.rand(Emotion.length())-0.5)
         else:
             vec = start + (2*step*np.random.rand(Emotion.length())-step)
 
