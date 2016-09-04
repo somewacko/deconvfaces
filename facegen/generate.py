@@ -9,6 +9,7 @@ import os
 import yaml
 
 import numpy as np
+from scipy import interpolate
 import scipy.misc
 
 from .instance import Emotion
@@ -65,6 +66,7 @@ class GenParser:
 
     def mode_single(self, params):
         """
+        Generate network inputs for a single image.
         """
 
         if params['id'] is None:
@@ -89,6 +91,7 @@ class GenParser:
 
     def mode_random(self, params):
         """
+        Generate random network inputs.
         """
 
         num_images = self.num_frames(params['num_images'], params)
@@ -120,6 +123,8 @@ class GenParser:
 
     def mode_drunk(self, params):
         """
+        Generate "drunk" network inputs, random vectors created by randomly
+        shifting the last vector.
         """
 
         num_images = self.num_frames(params['num_images'], params)
@@ -155,16 +160,70 @@ class GenParser:
 
     def mode_interpolate(self, params):
         """
+        Generate network inputs that interpolate between keyframes.
         """
 
-        if params['id'] is None:
-            params['id'] = 0
-        if params['em'] is None:
-            params['em'] = 'neutral'
-        if params['or'] is None:
-            params['or'] = 0
+        # Set starting/default values
+        id_val = params['id'] if params['id'] is not None else 0
+        em_val = params['em'] if params['em'] is not None else 0
+        or_val = params['or'] if params['or'] is not None else 0
 
-        raise RuntimeError("Mode 'interpolate' is not implemented")
+        # List of all id/em/or vectors for each keyframe
+        id_keyframes = list()
+        em_keyframes = list()
+        or_keyframes = list()
+
+        keyframe_indicies = list()
+
+
+        frame_index = None
+
+        for keyframe_params in params['keyframes']:
+
+            # Get new parameters, otherwise use values from the last keyframe
+            if 'id' in keyframe_params: id_val = keyframe_params['id']
+            if 'em' in keyframe_params: em_val = keyframe_params['em']
+            if 'or' in keyframe_params: or_val = keyframe_params['or']
+
+            # Determine which frame index this is in the animation
+            if frame_index is None:
+                frame_index = 0
+            else:
+                if 'length' not in keyframe_params:
+                    raise RuntimeError("A length must be specified for every "
+                                       "keyframe except the first")
+                frame_index += self.num_frames(keyframe_params['length'], params)
+
+            # Create input vectors for this keyframe
+            id_keyframes.append( self.identity_vector(id_val, params) )
+            em_keyframes.append( self.emotion_vector(em_val, params) )
+            or_keyframes.append( self.orientation_vector(or_val, params) )
+
+            keyframe_indicies.append( frame_index )
+
+        # Convert python lists to numpy arrays
+        id_keyframes = np.vstack(id_keyframes)
+        em_keyframes = np.vstack(em_keyframes)
+        or_keyframes = np.vstack(or_keyframes)
+
+        keyframe_indicies = np.array(keyframe_indicies)
+
+        num_frames = keyframe_indicies[-1]+1
+
+        # Interpolate
+        id_idx = np.arange(0, NUM_ID)
+        em_idx = np.arange(0, Emotion.length())
+        or_idx = np.arange(0, 2)
+
+        f_id = interpolate.interp2d(id_idx, keyframe_indicies, id_keyframes)
+        f_em = interpolate.interp2d(em_idx, keyframe_indicies, em_keyframes)
+        f_or = interpolate.interp2d(or_idx, keyframe_indicies, or_keyframes)
+
+        return {
+            'identity':    f_id(id_idx, np.arange(0, num_frames)),
+            'emotion':     f_em(em_idx, np.arange(0, num_frames)),
+            'orientation': f_or(or_idx, np.arange(0, num_frames)),
+        }
 
 
     # Helper methods
@@ -358,6 +417,7 @@ class GenParser:
 
 def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32):
     """
+    Generate images based on parameters specified in a yaml file.
     """
 
     parser = GenParser(yaml_path)
