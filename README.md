@@ -27,7 +27,7 @@ There are four different modes you can use to generate images:
 * `drunk`, similar to random, but produces a more contiguous sequence of images.
 * `interpolate`, animate between a set of specified keyframes.
 
-You can find examples of these param files in the `gen` directory, which should give you a good idea of how to format these and what's available.
+You can find examples of these files in the `params` directory, which should give you a good idea of how to format these and what's available.
 
 ## Examples
 

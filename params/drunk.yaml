@@ -1,0 +1,23 @@
+# A simple gen filt to produce a "drunk" set of randomly generated images.
+---
+mode: drunk         # This mode is similar to 'random', except each subsequent
+                    # generation is created by taking a random step from the
+                    # previous generation. This produces an erratic, yet
+                    # coherent animation.
+
+constrained: False
+
+or: 0               # If we set id/em/or parameters here, they'll stay constant.
+
+id_step: 0.2        # The amount of random step to move in each generation.
+em_step: 0.2        # In this case, a random value between -0.1 and 0.1 will be
+                    # added to each parameter value.
+
+min: 0              # However, we'll want to set min and max values for our
+max: 1              # min and max values so they don't step too far out.
+
+fps: 30             # Set a frames per second for this set of images.
+
+num_images: 10s     # If an 's' is appended to a number, we'll interpret it as
+                    # seconds and calculate the number of frames based on the
+                    # specified fps.

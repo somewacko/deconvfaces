@@ -1,0 +1,20 @@
+---
+mode: interpolate
+fps: 30
+
+keyframes:
+  -
+    id: 4
+    em: happy
+  -
+    id: 13
+    em: sad
+    length: 1s
+  -
+    id: 29
+    em: neutral
+    length: 1s
+  -
+    id: 4
+    em: happy
+    length: 1s

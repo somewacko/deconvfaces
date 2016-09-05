@@ -1,0 +1,13 @@
+# A simple gen file to produce a image with random, unconstrained parameters.
+---
+mode: random        # Use mode 'random' to produce random images
+
+constrained: False  # Unconstrain parameters, allowing "illegal" inputs.
+                    # Typically the inputs are constrained to unit length (or
+                    # satisfy [sin(x) cos(x)] for orientation), but disabling
+                    # this allows for some wild, unexpected generations.
+
+id_scale: 2.0       # Scale the identity vector by 2
+em_scale: 2.0       # Scale the emotion vector by 2 as well
+
+num_images: 100     # Produce one hundred random images

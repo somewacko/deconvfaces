@@ -1,0 +1,20 @@
+---
+mode: interpolate
+fps: 30
+
+keyframes:
+  -
+    id: 8
+    em: disgusted
+  -
+    id: 18
+    em: surprised
+    length: 1s
+  -
+    id: 21
+    em: angry
+    length: 1s
+  -
+    id: 8
+    em: disgusted
+    length: 1s

@@ -1,0 +1,119 @@
+---
+mode: interpolate
+fps: 60
+
+or: 0
+
+keyframes:
+  -
+    id: 2
+    em: neutral
+  -
+    em: happy
+    length: 1s
+  -
+    em: fearful
+    length: 1s
+  -
+    em: disgusted
+    length: 1s
+  -
+    em: contemptuous
+    length: 1s
+  -
+    em: angry
+    length: 1s
+  -
+    em: surprised
+    length: 1s
+  -
+    em: sad
+    length: 1s
+  -
+    em: neutral
+    length: 1s
+
+  -
+    id: 4
+    length: 1 # One frame!
+  -
+    em: happy
+    length: 1s
+  -
+    em: fearful
+    length: 1s
+  -
+    em: disgusted
+    length: 1s
+  -
+    em: contemptuous
+    length: 1s
+  -
+    em: angry
+    length: 1s
+  -
+    em: surprised
+    length: 1s
+  -
+    em: sad
+    length: 1s
+  -
+    em: neutral
+    length: 1s
+
+  -
+    id: 8
+    length: 1 # One frame!
+  -
+    em: happy
+    length: 1s
+  -
+    em: fearful
+    length: 1s
+  -
+    em: disgusted
+    length: 1s
+  -
+    em: contemptuous
+    length: 1s
+  -
+    em: angry
+    length: 1s
+  -
+    em: surprised
+    length: 1s
+  -
+    em: sad
+    length: 1s
+  -
+    em: neutral
+    length: 1s
+
+  -
+    id: 16
+    length: 1 # One frame!
+  -
+    em: happy
+    length: 1s
+  -
+    em: fearful
+    length: 1s
+  -
+    em: disgusted
+    length: 1s
+  -
+    em: contemptuous
+    length: 1s
+  -
+    em: angry
+    length: 1s
+  -
+    em: surprised
+    length: 1s
+  -
+    em: sad
+    length: 1s
+  -
+    em: neutral
+    length: 1s
+

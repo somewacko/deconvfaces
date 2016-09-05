@@ -1,0 +1,5 @@
+# A simple gen file to produce a single image of a happy person.
+---
+mode: single        # Use mode 'single' to produce a single image
+id: 3               # We want person #3
+em: happy           # And we want them to be happy
