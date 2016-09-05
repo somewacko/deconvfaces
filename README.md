@@ -1,4 +1,4 @@
-# FaceGen: Generating Faces with Deconvolution Networks
+# Generating Faces with Deconvolution Networks
 
 ![Example generations](img/example.gif)
 
