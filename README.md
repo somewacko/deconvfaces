@@ -29,6 +29,20 @@ There are four different modes you can use to generate images:
 
 You can find examples of these param files in the `gen` directory, which should give you a good idea of how to format these and what's available.
 
+## Examples
+
+Interpolating between identities and emotions:
+
+[![Interpolating between identities and emotions](http://img.youtube.com/vi/UdTq_Q-WgTs/0.jpg)](https://www.youtube.com/watch?v=UdTq_Q-WgTs)
+
+Interpolating between orientations: (which the model is unable to learn)
+
+[![Interpolating between orientation](http://img.youtube.com/vi/F4OFkN3EURk/0.jpg)](https://www.youtube.com/watch?v=F4OFkN3EURk)
+
+Random generations (using "drunk" mode):
+
+[![Random generations](http://img.youtube.com/vi/vt8zNvJNjSo/0.jpg)](https://www.youtube.com/watch?v=F4OFkN3EURk)
+
 [Chairs]: https://arxiv.org/abs/1411.5928
 [RaFD]: http://www.socsci.ru.nl:8180/RaFD2/RaFD?p=main
 [Keras]: https://keras.io/
