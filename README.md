@@ -43,7 +43,7 @@ Interpolating between orientations: (which the model is unable to learn)
 
 Random generations (using "drunk" mode):
 
-[![Random generations](http://img.youtube.com/vi/vt8zNvJNjSo/0.jpg)](https://www.youtube.com/watch?v=F4OFkN3EURk)
+[![Random generations](http://img.youtube.com/vi/vt8zNvJNjSo/0.jpg)](https://www.youtube.com/watch?v=vt8zNvJNjSo)
 
 [Chairs]: https://arxiv.org/abs/1411.5928
 [RaFD]: http://www.socsci.ru.nl:8180/RaFD2/RaFD?p=main
