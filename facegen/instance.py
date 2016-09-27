@@ -121,7 +121,7 @@ class RaFDInstance:
         Args:
             directory (str): Base directory where the example lives.
             filename (str): The name of the file of the example.
-            image_size (tuple<int>): Size to resize the imagae to.
+            image_size (tuple<int>): Size to resize the image to.
         Args (optional):
             trim (int): How many pixels from the edge to trim off the top and sides.
             top (int): How much extra to trim off the top.

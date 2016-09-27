@@ -24,7 +24,7 @@ class GenerateIntermediate(Callback):
 
         Args:
             output_dir (str): Directory to save intermediate results in.
-            num_identities (int): Number of identites in the training set.
+            num_identities (int): Number of identities in the training set.
         Args: (optional)
             batch_size (int): Batch size to use when generating images.
         """
