@@ -10,7 +10,7 @@ This repo contains code to train and interface with a deconvolution network adap
 
 To train a new model, simply run:
 
-    python3 facegen.py train path/to/data
+    python3 faces.py train path/to/data
     
 You can specify the number of deconvolution layers with `-d` to generate larger images, assuming your GPU has the memory for it. You can play with the batch size and the number of kernels per layer (using `-b` and `-k` respectively) until it fits in memory, although this may result in worse results or longer training.
 
@@ -20,7 +20,7 @@ Using 6 deconvolution layers with a batch size of 8 and the default number of ke
 
 To generate images using a trained model, you can specify parameters in a yaml file and run:
 
-    python3 facegen.py generate -m path/to/model -o output/directory -f path/to/params.yaml
+    python3 faces.py generate -m path/to/model -o output/directory -f path/to/params.yaml
 
 There are four different modes you can use to generate images:
 
