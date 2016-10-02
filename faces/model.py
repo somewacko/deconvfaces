@@ -61,8 +61,7 @@ def build_model(identity_len=57, orientation_len=2,
         x = Reshape((height, width, num_kernels[0]))(x)
 
     for i in range(0, deconv_layers):
-        # Pool and upsample
-        x = MaxPooling2D((1,1))(x)
+        # Upsample input
         x = UpSampling2D((2,2))(x)
 
         # Apply 5x5 and 3x3 convolutions
