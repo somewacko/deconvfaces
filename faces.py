@@ -42,6 +42,8 @@ def train():
 
     parser.add_argument('-v', '--visualize', action='store_true', help=
             "Output intermediate results after each epoch.")
+    parser.add_argument('--use-yalefaces', action='store_true', help=
+            "Use YaleFaces data instead of RaFD")
 
     args = parser.parse_args(sys.argv[2:])
 
@@ -59,6 +61,7 @@ def train():
         deconv_layers         = args.deconv_layers,
         kernels_per_layer     = args.kernels_per_layer,
         generate_intermediate = args.visualize,
+        use_yale              = args.use_yalefaces,
         verbose               = True,
     )
 
@@ -82,13 +85,16 @@ def generate():
             "Batch size to use while generating images.")
     parser.add_argument('-ext', '--extension', type=str, default='jpg', help=
             "Image file extension to use when saving images.")
+    parser.add_argument('--use-yalefaces', action='store_true', help=
+            "Use YaleFaces data instead of RaFD")
 
     args = parser.parse_args(sys.argv[2:])
 
     import faces.generate
 
     faces.generate.generate_from_yaml(args.gen_file, args.model, args.output,
-            batch_size=args.batch_size, extension=args.extension)
+            batch_size=args.batch_size, extension=args.extension,
+            use_yale=args.use_yalefaces)
 
 
 # ---- Command-line invocation

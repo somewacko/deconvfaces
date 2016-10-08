@@ -416,10 +416,14 @@ class GenParser:
         return fn(params)
 
 
-def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32, extension='jpg'):
+def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32,
+        extension='jpg', use_yale=False):
     """
     Generate images based on parameters specified in a yaml file.
     """
+
+    if use_yale:
+        raise NotImplementedError("Generating with YaleFaces is not implemented!")
 
     parser = GenParser(yaml_path)
 

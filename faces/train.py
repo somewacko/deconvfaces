@@ -11,14 +11,14 @@ from keras.models import load_model
 import numpy as np
 import scipy.misc
 
-from .instance import Emotion, RaFDInstances
+from .instance import Emotion, RaFDInstances, YaleInstances, NUM_YALE_POSES
 from .model import build_model
 
 
 class GenerateIntermediate(Callback):
     """ Callback to generate intermediate images after each epoch. """
 
-    def __init__(self, output_dir, num_identities, batch_size=32):
+    def __init__(self, output_dir, num_identities, batch_size=32, use_yale=False):
         """
         Constructor for a GenerateIntermediate object.
 
@@ -33,18 +33,28 @@ class GenerateIntermediate(Callback):
         self.output_dir = output_dir
         self.num_identities = num_identities
         self.batch_size = batch_size
+        self.use_yale = use_yale
 
         self.parameters = dict()
 
         # Sweep through identities
         self.parameters['identity'] = np.eye(num_identities)
 
-        # Make all have neutral expressions, front-facing
-        self.parameters['emotion'] = np.empty((num_identities, Emotion.length()))
-        self.parameters['orientation'] = np.zeros((num_identities, 2))
-        for i in range(0, num_identities):
-            self.parameters['emotion'][i,:] = Emotion.neutral
-            self.parameters['orientation'][i,1] = 1
+        if use_yale:
+            # Use pose 0, lighting at 0deg azimuth and elevation
+            self.parameters['pose'] = np.zeros((num_identities, NUM_YALE_POSES))
+            self.parameters['lighting'] = np.zeros((num_identities, 4))
+            for i in range(0, num_identities):
+                self.parameters['pose'][i,0] = 0
+                self.parameters['lighting'][i,1] = 1
+                self.parameters['lighting'][i,3] = 1
+        else:
+            # Make all have neutral expressions, front-facing
+            self.parameters['emotion'] = np.empty((num_identities, Emotion.length()))
+            self.parameters['orientation'] = np.zeros((num_identities, 2))
+            for i in range(0, num_identities):
+                self.parameters['emotion'][i,:] = Emotion.neutral
+                self.parameters['orientation'][i,1] = 1
 
 
     def on_train_begin(self, logs={}):
@@ -65,18 +75,25 @@ class GenerateIntermediate(Callback):
 
         for i in range(0, gen.shape[0]):
             if K.image_dim_ordering() == 'th':
-                image = np.empty(gen.shape[2:]+(3,))
-                for x in range(0, 3):
-                    image[:,:,x] = gen[i,x,:,:]
+                if self.use_yale:
+                    image = np.empty(gen.shape[2:])
+                    image[:,:] = gen[i,0,:,:]
+                else:
+                    image = np.empty(gen.shape[2:]+(3,))
+                    for x in range(0, 3):
+                        image[:,:,x] = gen[i,x,:,:]
             else:
-                image = gen[i,:,:,:]
+                if self.use_yale:
+                    image = gen[i,:,:,0]
+                else:
+                    image = gen[i,:,:,:]
             image = np.array(255*np.clip(image,0,1), dtype=np.uint8)
             file_path = os.path.join(dest_dir, '{:02}.png'.format(i))
             scipy.misc.imsave(file_path, image)
 
 
 def train_model(data_dir, output_dir, model_file='', batch_size=32,
-        num_epochs=100, optimizer='adam', deconv_layers=5,
+        num_epochs=100, optimizer='adam', deconv_layers=5, use_yale=False,
         kernels_per_layer=None, generate_intermediate=False, verbose=False):
     """
     Trains the model on the data, generating intermediate results every epoch.
@@ -97,7 +114,7 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    instances = RaFDInstances(data_dir)
+    instances = YaleInstances(data_dir) if use_yale else RaFDInstances(data_dir)
 
     if verbose:
         print("Found {} instances with {} identities".format(
@@ -116,6 +133,8 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
             deconv_layers = deconv_layers,
             num_kernels   = kernels_per_layer,
             optimizer     = optimizer,
+            initial_shape = (5,4) if not use_yale else (6,8),
+            use_yale      = use_yale,
         )
         if verbose:
             print("Built model with:")
@@ -129,9 +148,10 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
 
     if generate_intermediate:
         intermediate_dir = os.path.join(output_dir, 'intermediate.d{}.{}'.format(deconv_layers, optimizer))
-        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities) )
+        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities, use_yale=use_yale) )
 
-    model_path = os.path.join(output_dir, 'FaceGen.model.d{}.{}.h5'.format(deconv_layers, optimizer))
+    model_path = os.path.join(output_dir, 'FaceGen.{}.model.d{}.{}.h5'
+            .format('YaleFaces' if use_yale else 'RaFD', deconv_layers, optimizer))
 
     callbacks.append(
         ModelCheckpoint(
