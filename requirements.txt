@@ -1,0 +1,15 @@
+dask==0.13.0
+decorator==4.0.10
+h5py==2.6.0
+Keras==1.2.0
+networkx==1.11
+numpy==1.11.3
+olefile==0.44
+Pillow==4.0.0
+PyYAML==3.12
+scikit-image==0.12.3
+scipy==0.18.1
+six==1.10.0
+Theano==0.8.2
+toolz==0.8.2
+tqdm==4.10.0
