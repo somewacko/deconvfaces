@@ -33,8 +33,6 @@ def build_model(identity_len=57, orientation_len=2, lighting_len=4,
         keras.Model, the constructed model.
     """
 
-    print(initial_shape)
-
     if num_kernels is None:
         num_kernels = [128, 128, 96, 96, 32, 32, 16]
 
@@ -61,8 +59,6 @@ def build_model(identity_len=57, orientation_len=2, lighting_len=4,
     # Apply deconvolution layers
 
     height, width = initial_shape
-
-    print('height:', height, 'width:', width)
 
     x = LeakyReLU()( Dense(height*width*num_kernels[0])(params) )
     if K.image_dim_ordering() == 'th':
