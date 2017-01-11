@@ -15,12 +15,6 @@ from tqdm import tqdm
 
 from .instance import Emotion, NUM_YALE_POSES
 
-
-# TODO: Get number of identities dynamically from the loaded model.
-NUM_YALE_ID = 28
-NUM_ID = 57
-
-
 class GenParser:
     """
     Class to parse and create inputs based on the parameters in a yaml file.
@@ -30,7 +24,6 @@ class GenParser:
     DefaultParams = {
         'mode'        : 'single',
         'constrained' : True,
-        'use_yale'    : False,
         'id'          : None,
         'em'          : None,
         'or'          : None,
@@ -93,9 +86,9 @@ class GenParser:
         if params['lt'] is None:
             params['lt'] = 0
 
-        if params['use_yale']:
+        if params['dataset'] == 'YALE':
             inputs = {
-                'identity': np.empty((1, NUM_YALE_ID)),
+                'identity': np.empty((1, params['num_ids'])),
                 'pose': np.empty((1, NUM_YALE_POSES)),
                 'lighting': np.empty((1, 4)),
             }
@@ -104,7 +97,7 @@ class GenParser:
             inputs['lighting'][0,:] = self.lighting_vector(params['lt'], params)
         else:
             inputs = {
-                'identity': np.empty((1, NUM_ID)),
+                'identity': np.empty((1, params['num_ids'])),
                 'emotion': np.empty((1, Emotion.length())),
                 'orientation': np.empty((1, 2)),
             }
@@ -123,15 +116,15 @@ class GenParser:
 
         num_images = self.num_frames(params['num_images'], params)
 
-        if params['use_yale']:
+        if params['dataset'] == 'YALE':
             inputs = {
-                'identity': np.empty((num_images, NUM_YALE_ID)),
+                'identity': np.empty((num_images, params['num_ids'])),
                 'pose': np.empty((num_images, NUM_YALE_POSES)),
                 'lighting': np.empty((num_images, 4)),
             }
         else:
             inputs = {
-                'identity':    np.empty((num_images, NUM_ID)),
+                'identity':    np.empty((num_images, params['num_ids'])),
                 'emotion':     np.empty((num_images, Emotion.length())),
                 'orientation': np.empty((num_images, 2)),
             }
@@ -142,10 +135,10 @@ class GenParser:
             else:
                 inputs['identity'][i,:] = self.identity_vector(params['id'], params)
 
-            if params['use_yale']:
+            if params['dataset'] == "YALE":
                 if params['ps'] is None:
                     inputs['pose'][i,:] = self.random_pose(params)
-                else: 
+                else:
                     inputs['pose'][i,:] = self.pose_vector(params['ps'], params)
 
                 if params['lt'] is None:
@@ -174,15 +167,15 @@ class GenParser:
 
         num_images = self.num_frames(params['num_images'], params)
 
-        if params['use_yale']:
+        if params['dataset'] == "YALE":
             inputs = {
-                'identity': np.empty((num_images, NUM_YALE_ID)),
+                'identity': np.empty((num_images, params['num_ids'])),
                 'pose':     np.empty((num_images, NUM_YALE_POSES)),
                 'lighting': np.empty((num_images, 4)),
             }
         else:
             inputs = {
-                'identity':    np.empty((num_images, NUM_ID)),
+                'identity':    np.empty((num_images, params['num_ids'])),
                 'emotion':     np.empty((num_images, Emotion.length())),
                 'orientation': np.empty((num_images, 2)),
             }
@@ -196,7 +189,7 @@ class GenParser:
             else:
                 inputs['identity'][i,:] = self.identity_vector(params['id'], params)
 
-            if params['use_yale']:
+            if params['dataset'] == "YALE":
                 if params['ps'] is None:
                     inputs['pose'][i,:] = self.random_pose(params, last_ps)
                     last_ps = inputs['pose'][i,:]
@@ -227,7 +220,7 @@ class GenParser:
         Generate network inputs that interpolate between keyframes.
         """
 
-        use_yale = params['use_yale']
+        use_yale = params['dataset'] == "YALE"
 
         # Set starting/default values
         id_val = params['id'] if params['id'] is not None else 0
@@ -360,11 +353,9 @@ class GenParser:
         else:
             raise RuntimeError("Identity '{}' not understood".format(value))
 
-        num_ids = NUM_ID if not params['use_yale'] else NUM_YALE_ID
-
-        vec = np.zeros((num_ids,))
+        vec = np.zeros((params['num_ids'],))
         for val in values:
-            if val < 0 or num_ids <= val:
+            if val < 0 or params['num_ids'] <= val:
                 raise RuntimeError("Identity '{}' invalid".format(val))
             vec[val] += 1.0
 
@@ -482,12 +473,10 @@ class GenParser:
 
         step = params['id_step']
 
-        num_ids = NUM_ID if not params['use_yale'] else NUM_YALE_ID
-
         if start is None:
-            vec = 2*(np.random.rand(num_ids)-0.5)
+            vec = 2*(np.random.rand(params['num_ids'])-0.5)
         else:
-            vec = start + (2*step*np.random.rand(num_ids)-step)
+            vec = start + (2*step*np.random.rand(params['num_ids'])-step)
 
         return self.constrain(vec, params['constrained'], params['id_scale'],
                 params['id_min'], params['id_max'])
@@ -598,7 +587,7 @@ class GenParser:
 
     # Main parsing method
 
-    def parse(self):
+    def parse_params(self):
         """
         Parses the yaml file and creates input vectors to use with the model.
         """
@@ -613,7 +602,12 @@ class GenParser:
             if field in yaml_params:
                 params[field] = yaml_params[field]
 
-        self.use_yale = params['use_yale']
+        return params
+
+    def gen_inputs(self, params):
+        """
+        creates input vectors to use with the model.
+        """
 
         fn = None
         try:
@@ -624,33 +618,40 @@ class GenParser:
         return fn(params)
 
 
+
 def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32,
         extension='jpg'):
     """
     Generate images based on parameters specified in a yaml file.
     """
 
-    parser = GenParser(yaml_path)
-
-    try:
-        inputs = parser.parse()
-    except RuntimeError as e:
-        print("Error: Unable to parse '{}'. Encountered exception:".format(yaml_path))
-        print(e)
-        return
-
     from keras import backend as K
     from keras.models import load_model
 
     print("Loading model...")
 
+    model = load_model(model_path)
+    num_ids = model.input_shape[0][1] # XXX is there a nicer way to get this?
+    dataset = os.path.basename(model_path).split('.')[1]
+
+    parser = GenParser(yaml_path)
+
+    try:
+        params = parser.parse_params()
+    except RuntimeError as e:
+        print("Error: Unable to parse '{}'. Encountered exception:".format(yaml_path))
+        print(e)
+        return
+    params['dataset'] = dataset
+    params['num_ids'] = num_ids
+    inputs = parser.gen_inputs(params)
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     else:
-        raise RuntimeError("Directory '{}' exists. Cowardly refusing to continue."
+        raise RuntimeError(
+            "Directory '{}' exists. Cowardly refusing to continue."
             .format(output_dir))
-
-    model = load_model(model_path)
 
     print("Generating images...")
 
@@ -659,7 +660,7 @@ def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32,
 
     for idx in tqdm(range(0, num_images, batch_size)):
 
-        if parser.use_yale:
+        if dataset == "YALE":
             batch = {
                 'identity': inputs['identity'][idx:idx+batch_size,:],
                 'pose':     inputs['pose']    [idx:idx+batch_size,:],
@@ -676,14 +677,14 @@ def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32,
 
         for i in range(0, gen.shape[0]):
             if K.image_dim_ordering() == 'th':
-                if parser.use_yale:
+                if dataset == "YALE":
                     image[:,:] = gen[i,0,:,:]
                 else:
                     image = np.empty(gen.shape[2:]+(3,))
                     for x in range(0, 3):
                         image[:,:,x] = gen[i,x,:,:]
             else:
-                if parser.use_yale:
+                if dataset == "YALE" or dataset == "JAFFE":
                     image = gen[i,:,:,0]
                 else:
                     image = gen[i,:,:,:]
@@ -691,5 +692,3 @@ def generate_from_yaml(yaml_path, model_path, output_dir, batch_size=32,
             file_path = os.path.join(output_dir, '{:05}.{}'.format(count, extension))
             scipy.misc.imsave(file_path, image)
             count += 1
-
-
