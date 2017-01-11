@@ -6,7 +6,7 @@ Instance class to hold data for each example.
 """
 
 import os
-import random
+import csv
 
 from keras import backend as K
 
@@ -185,6 +185,110 @@ class YaleInstances:
         return inputs, outputs
 
 
+class JAFFEInstances:
+    """
+    This is a reader for the JAFFE dataset of Japanese female faces
+    acting out varying expressions, scored by a panel of FACS evaluators.
+    Image download link at http://www.kasrl.org/jaffe_info.html
+    The unpacked directory structure is flat, with filenames like KA.AN1.39.tiff
+    You should add to this directory a CSV version of the semantic ratings
+    table appearing on the download page, as semantic-ratings.csv
+    You'll have to make this yourself. First two lines will look like:
+        N,HAP,SAD,SUR,ANG,DIS,FEA,PIC
+        1,2.87,2.52,2.10,1.97,1.97,2.06,KM-NE1
+    """
+
+    def __init__(self, directory):
+        """
+        Constructor for a JAFFEInstances object.
+
+        Args:
+            directory (str): Directory where the data lives
+        """
+
+        self.directory = directory
+        self.filenames = [x for x in os.listdir(directory) if x.endswith('tiff')]
+        self.num_instances = len(self.filenames)
+        identity_map = {}
+        for fname in self.filenames:
+            ident, emotion = fname.split('.')[:2]
+            # assign identity strings contiguous indices
+            identity_map[ident] = identity_map.get(ident, len(identity_map))
+        self.identity_map = identity_map
+        self.num_identities = len(identity_map)
+
+    def load_semantic_ratings(self):
+        """
+        Loads semantic ratings for each instance. These assign
+        human-evaluated levels for each emotion in a given face
+        (a face will generally have nonzero score on multiple emotions).
+
+        Returns:
+            dict, ratings (vectors of emotion scores keyed by inst#)
+        """
+
+        # map JAFFE emotion labels to local Emotion indices
+        # note that there is no explicit JAFFE neutral, it is implied when
+        # no specific emotion dominates.
+        emotions = ('ANG', '_', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD', 'SUR')
+        emotion_map = {emotion:idx for idx, emotion in enumerate(emotions)}
+        ratings = {}
+        with open(os.path.join(self.directory, 'semantic-ratings.csv')) as rows:
+            reader = csv.DictReader(rows)
+            for row in reader:
+                rates = np.array([float(row.get(emotion, 1))
+                                  for emotion in emotions])
+                # emotions are scored 1..5, make them 0-1
+                rates = (rates - 1.0) / 4.0
+                # synthesize 'neutral' score as the complement of the strongest
+                # emotion present.
+                rates[emotion_map['NEU']] = 1.0 - np.max(rates)
+                # input convention is for the emotion vector to sum to 1.
+                rates = rates / np.linalg.norm(rates)
+                N = int(row['N']) - 1
+                ratings[N] = rates
+        return ratings
+
+    def load_data(self, image_size, verbose=False):
+        """
+        Loads JAFFE data for training.
+
+        Args:
+            image_size (tuple<int>): Size images should be resized to.
+        Returns:
+            numpy.ndarray, training data (face parameters).
+            numpy.ndarray, output data (the actual images to generate).
+        """
+
+        instances = [JAFFEInstance(self.directory, fname, image_size)
+                     for fname in self.filenames]
+        inst_idents = np.empty((self.num_instances, self.num_identities))
+        for idx, inst in enumerate(instances):
+            # each row in inst_idents is a one-hot encoding of identity idx
+            inst_idents[idx, self.identity_map[inst.identity]] = 1
+        inst_orient = np.tile((0, 1), self.num_instances).reshape(-1,2)
+        ratings = self.load_semantic_ratings()
+        # Note: there are some scored instance N's with no instance file!
+        inst_emotion = np.array([ratings[inst.N] for inst in instances])
+
+        inputs = {
+            'identity': inst_idents, # 1-hot
+            'orientation': inst_orient,
+            'emotion': inst_emotion,
+        }
+        print("JAFFE: found %d identities, %instances" % (
+            self.num_identities, self.num_instances))
+        if K.image_dim_ordering() == 'th':
+            inst_image = [inst.th_image() for inst in instances]
+            outputs = np.empty((self.num_instances, 1)+image_size)
+        else:
+            inst_image = [inst.tf_image() for inst in instances]
+            outputs = np.empty((self.num_instances,)+image_size+(1,))
+        outputs[np.arange(self.num_instances)] = inst_image
+
+        return inputs, outputs
+
+
 # ---- Instance class definition
 
 class RaFDInstance:
@@ -341,3 +445,46 @@ class YaleInstance:
         return np.expand_dims(self.image, 2)
 
 
+class JAFFEInstance:
+    """
+    Holds information about each JAFFE example.
+    """
+
+    def __init__(self, directory, filepath, image_size):
+        """
+        Constructor for an JAFFEInstance object.
+
+        Args:
+            directory (str): Base directory where the example lives.
+            filename (str): The name of the file of the example.
+            image_size (tuple<int>): Size to resize the image to.
+        """
+
+        filename = filepath.split('/')[-1]
+
+        self.image = misc.imread( os.path.join(directory, filepath) )
+        # some of the jaffe images are 3-channel greyscale, some are 1-channel!
+        self.image = np.atleast_3d(self.image)[...,0] # make image 2d for sure
+        # Resize and scale values to [0 1]
+        self.image = misc.imresize( self.image, image_size )
+        self.image = self.image / 255.0
+        ident, _, N, _ = filename.split('.')
+        # Note: the emotion encoded in the filename is the dominant
+        # scoring emotion, but we ignore this and use precise emotion scores
+        # from the semantic ratings table
+        self.identity, self.N = ident, int(N) - 1 # 0-based instance numbering
+
+    def th_image(self):
+        """
+        Returns a Theano-ordered representation of the image.
+        """
+
+        return np.expand_dims(self.image, 0)
+
+
+    def tf_image(self):
+        """
+        Returns a TensorFlow-ordered representation of the image.
+        """
+
+        return np.expand_dims(self.image, 2)
