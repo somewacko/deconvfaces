@@ -44,6 +44,8 @@ def train():
             "Output intermediate results after each epoch.")
     parser.add_argument('--use-yalefaces', action='store_true', help=
             "Use YaleFaces data instead of RaFD")
+    parser.add_argument('--use-jaffe', action='store_true', help=
+            "Use JAFFE data instead of RaFD")
 
     args = parser.parse_args(sys.argv[2:])
 
@@ -62,6 +64,7 @@ def train():
         kernels_per_layer     = args.kernels_per_layer,
         generate_intermediate = args.visualize,
         use_yale              = args.use_yalefaces,
+        use_jaffe             = args.use_jaffe,
         verbose               = True,
     )
 
@@ -125,5 +128,3 @@ if __name__ == '__main__':
 
     if cmd is not None:
         cmd()
-
-

@@ -11,14 +11,16 @@ from keras.models import load_model
 import numpy as np
 import scipy.misc
 
-from .instance import Emotion, RaFDInstances, YaleInstances, NUM_YALE_POSES
+from .instance import (
+    Emotion, RaFDInstances, YaleInstances, JAFFEInstances, NUM_YALE_POSES)
 from .model import build_model
 
 
 class GenerateIntermediate(Callback):
     """ Callback to generate intermediate images after each epoch. """
 
-    def __init__(self, output_dir, num_identities, batch_size=32, use_yale=False):
+    def __init__(self, output_dir, num_identities, batch_size=32, use_yale=False,
+                 use_jaffe=False):
         """
         Constructor for a GenerateIntermediate object.
 
@@ -34,6 +36,7 @@ class GenerateIntermediate(Callback):
         self.num_identities = num_identities
         self.batch_size = batch_size
         self.use_yale = use_yale
+        self.use_jaffe = use_jaffe
 
         self.parameters = dict()
 
@@ -75,7 +78,7 @@ class GenerateIntermediate(Callback):
 
         for i in range(0, gen.shape[0]):
             if K.image_dim_ordering() == 'th':
-                if self.use_yale:
+                if self.use_yale or self.use_jaffe:
                     image = np.empty(gen.shape[2:])
                     image[:,:] = gen[i,0,:,:]
                 else:
@@ -83,7 +86,7 @@ class GenerateIntermediate(Callback):
                     for x in range(0, 3):
                         image[:,:,x] = gen[i,x,:,:]
             else:
-                if self.use_yale:
+                if self.use_yale or self.use_jaffe:
                     image = gen[i,:,:,0]
                 else:
                     image = gen[i,:,:,:]
@@ -93,8 +96,10 @@ class GenerateIntermediate(Callback):
 
 
 def train_model(data_dir, output_dir, model_file='', batch_size=32,
-        num_epochs=100, optimizer='adam', deconv_layers=5, use_yale=False,
-        kernels_per_layer=None, generate_intermediate=False, verbose=False):
+                num_epochs=100, optimizer='adam', deconv_layers=5,
+                use_yale=False, use_jaffe=False,
+                kernels_per_layer=None, generate_intermediate=False,
+                verbose=False):
     """
     Trains the model on the data, generating intermediate results every epoch.
 
@@ -114,7 +119,9 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    instances = YaleInstances(data_dir) if use_yale else RaFDInstances(data_dir)
+    instances = (YaleInstances(data_dir) if use_yale
+                 else JAFFEInstances(data_dir) if use_jaffe
+                 else RaFDInstances(data_dir))
 
     if verbose:
         print("Found {} instances with {} identities".format(
@@ -126,7 +133,7 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
     if model_file:
         model = load_model(model_file)
         if verbose:
-            print("Loaded model from {}".format(model_file))
+            print("Loaded model %d identities from {}".format(model.model_file))
     else:
         model = build_model(
             identity_len  = instances.num_identities,
@@ -135,12 +142,12 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
             optimizer     = optimizer,
             initial_shape = (5,4) if not use_yale else (6,8),
             use_yale      = use_yale,
+            use_jaffe      = use_jaffe,
         )
         if verbose:
             print("Built model with:")
             print("\tDeconv layers: {}".format(deconv_layers))
             print("\tOutput shape: {}".format(model.output_shape[1:]))
-
 
     # Create training callbacks
 
@@ -148,10 +155,10 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
 
     if generate_intermediate:
         intermediate_dir = os.path.join(output_dir, 'intermediate.d{}.{}'.format(deconv_layers, optimizer))
-        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities, use_yale=use_yale) )
+        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities, use_yale=use_yale, use_jaffe=use_jaffe) )
 
     model_path = os.path.join(output_dir, 'FaceGen.{}.model.d{}.{}.h5'
-            .format('YaleFaces' if use_yale else 'RaFD', deconv_layers, optimizer))
+            .format('YaleFaces' if use_yale else 'JAFFE' if use_jaffe else 'RaFD', deconv_layers, optimizer))
 
     callbacks.append(
         ModelCheckpoint(
@@ -183,4 +190,3 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
 
     if verbose:
         print("Done!")
-

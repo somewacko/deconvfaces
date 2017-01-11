@@ -14,9 +14,9 @@ from .instance import Emotion, NUM_YALE_POSES
 
 
 def build_model(identity_len=57, orientation_len=2, lighting_len=4,
-        emotion_len=Emotion.length(), pose_len=NUM_YALE_POSES,
-        initial_shape=(5,4), deconv_layers=5, num_kernels=None,
-        optimizer='adam', use_yale=False):
+                emotion_len=Emotion.length(), pose_len=NUM_YALE_POSES,
+                initial_shape=(5,4), deconv_layers=5, num_kernels=None,
+                optimizer='adam', use_yale=False, use_jaffe=False):
     """
     Builds a deconvolution FaceGen model.
 
@@ -32,6 +32,8 @@ def build_model(identity_len=57, orientation_len=2, lighting_len=4,
     Returns:
         keras.Model, the constructed model.
     """
+
+    print(initial_shape)
 
     if num_kernels is None:
         num_kernels = [128, 128, 96, 96, 32, 32, 16]
@@ -60,6 +62,8 @@ def build_model(identity_len=57, orientation_len=2, lighting_len=4,
 
     height, width = initial_shape
 
+    print('height:', height, 'width:', width)
+
     x = LeakyReLU()( Dense(height*width*num_kernels[0])(params) )
     if K.image_dim_ordering() == 'th':
         x = Reshape((num_kernels[0], height, width))(x)
@@ -84,7 +88,8 @@ def build_model(identity_len=57, orientation_len=2, lighting_len=4,
     x = UpSampling2D((2,2))(x)
     x = LeakyReLU()( Convolution2D(8, 5, 5, border_mode='same')(x) )
     x = LeakyReLU()( Convolution2D(8, 3, 3, border_mode='same')(x) )
-    x = Convolution2D(1 if use_yale else 3, 3, 3, border_mode='same', activation='sigmoid')(x)
+    x = Convolution2D(1 if use_yale or use_jaffe else 3, 3, 3,
+                      border_mode='same', activation='sigmoid')(x)
 
     # Compile the model
 
@@ -97,4 +102,3 @@ def build_model(identity_len=57, orientation_len=2, lighting_len=4,
     model.compile(optimizer=optimizer, loss='msle')
 
     return model
-
