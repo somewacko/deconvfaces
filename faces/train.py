@@ -116,6 +116,8 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
         generate_intermediate (bool): Whether or not to generate intermediate results.
     """
 
+    data_dir = os.path.expanduser(data_dir)
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -135,14 +137,21 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
         if verbose:
             print("Loaded model %d identities from {}".format(model.model_file))
     else:
+        # TODO: Refactor this to a more elegant way to determine params by dataset
+        initial_shape = (5,4)
+        if use_yale:
+            initial_shape = (6,8)
+        if use_jaffe:
+            initial_shape = (4,4)
+
         model = build_model(
             identity_len  = instances.num_identities,
             deconv_layers = deconv_layers,
             num_kernels   = kernels_per_layer,
             optimizer     = optimizer,
-            initial_shape = (5,4) if not use_yale else (6,8),
+            initial_shape = initial_shape,
             use_yale      = use_yale,
-            use_jaffe      = use_jaffe,
+            use_jaffe     = use_jaffe,
         )
         if verbose:
             print("Built model with:")
@@ -155,7 +164,8 @@ def train_model(data_dir, output_dir, model_file='', batch_size=32,
 
     if generate_intermediate:
         intermediate_dir = os.path.join(output_dir, 'intermediate.d{}.{}'.format(deconv_layers, optimizer))
-        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities, use_yale=use_yale, use_jaffe=use_jaffe) )
+        callbacks.append( GenerateIntermediate(intermediate_dir, instances.num_identities,
+                                               use_yale=use_yale, use_jaffe=use_jaffe) )
 
     model_path = os.path.join(output_dir, 'FaceGen.{}.model.d{}.{}.h5'
             .format('YaleFaces' if use_yale else 'JAFFE' if use_jaffe else 'RaFD', deconv_layers, optimizer))
