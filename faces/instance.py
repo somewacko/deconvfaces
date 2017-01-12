@@ -262,10 +262,11 @@ class JAFFEInstances:
 
         instances = [JAFFEInstance(self.directory, fname, image_size)
                      for fname in self.filenames]
-        inst_idents = np.empty((self.num_instances, self.num_identities))
+        inst_idents = np.zeros((self.num_instances, self.num_identities))
         for idx, inst in enumerate(instances):
             # each row in inst_idents is a one-hot encoding of identity idx
             inst_idents[idx, self.identity_map[inst.identity]] = 1
+
         inst_orient = np.tile((0, 1), self.num_instances).reshape(-1,2)
         ratings = self.load_semantic_ratings()
         # Note: there are some scored instance N's with no instance file!
