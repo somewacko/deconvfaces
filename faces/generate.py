@@ -291,11 +291,11 @@ class GenParser:
 
         # Interpolate
         if use_yale:
-            id_idx = np.arange(0, NUM_YALE_ID)
+            id_idx = np.arange(0, params['num_ids'])
             ps_idx = np.arange(0, NUM_YALE_POSES)
             lt_idx = np.arange(0, 4)
         else:
-            id_idx = np.arange(0, NUM_ID)
+            id_idx = np.arange(0, params['num_ids'])
             em_idx = np.arange(0, Emotion.length())
             or_idx = np.arange(0, 2)
 
