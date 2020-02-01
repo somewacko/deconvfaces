@@ -4,8 +4,6 @@
 
 This repo contains code to train and interface with a deconvolution network adapted from [this paper][Chairs] to generate faces using data from the [Radboud Faces Database][RaFD]. Requires [Keras][Keras], [NumPy][NumPy], [SciPy][SciPy], and [tqdm][tqdm] with Python 3 to use.
 
-[A blog post describing this project can be found here][Writeup].
-
 ## Training New Models
 
 To train a new model, simply run:
@@ -51,4 +49,3 @@ Random generations (using "drunk" mode):
 [NumPy]: http://www.numpy.org/
 [SciPy]: https://www.scipy.org/
 [tqdm]: https://github.com/noamraph/tqdm
-[Writeup]: https://zo7.github.io/blog/2016/09/25/generating-faces.html
