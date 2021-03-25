@@ -6,7 +6,7 @@ networkx==1.11
 numpy==1.11.3
 olefile==0.44
 Pillow==4.0.0
-PyYAML==3.12
+PyYAML==5.4
 scikit-image==0.12.3
 scipy==0.18.1
 six==1.10.0
